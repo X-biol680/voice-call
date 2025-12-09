@@ -1,32 +1,42 @@
 const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const path = require("path");
-
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+const server = require("http").createServer(app);
+const io = require("socket.io")(server, {
+  cors: {
+    origin: "*"
+  }
+});
 
-app.use(express.static(path.join(__dirname, "public")));
+// Serve static files (HTML, CSS, JS)
+app.use(express.static(__dirname));
 
-io.on("connection", (socket) => {
-  socket.on("join", (room) => {
-    socket.join(room);
-    socket.to(room).emit("new-user");
+// Default route → serve index.html
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/index.html");
+});
+
+// WebRTC signaling handlers
+io.on("connection", socket => {
+  console.log("A user connected");
+
+  socket.on("offer", data => {
+    socket.broadcast.emit("offer", data);
   });
 
-  socket.on("offer", (data) => {
-    socket.to(data.room).emit("offer", data.offer);
+  socket.on("answer", data => {
+    socket.broadcast.emit("answer", data);
   });
 
-  socket.on("answer", (data) => {
-    socket.to(data.room).emit("answer", data.answer);
+  socket.on("ice-candidate", data => {
+    socket.broadcast.emit("ice-candidate", data);
   });
 
-  socket.on("ice-candidate", (data) => {
-    socket.to(data.room).emit("ice-candidate", data.candidate);
+  socket.on("disconnect", () => {
+    console.log("User disconnected");
   });
 });
 
-const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => console.log("Signaling server running"));
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log("Server running on port", PORT);
+});
