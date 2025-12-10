@@ -1,42 +1,42 @@
 const express = require("express");
+const http = require("http");
+const socketIO = require("socket.io");
+
 const app = express();
-const server = require("http").createServer(app);
-const io = require("socket.io")(server, {
-  cors: {
-    origin: "*"
-  }
+const server = http.createServer(app);
+const io = socketIO(server, {
+    cors: { origin: "*" }
 });
 
-// Serve static files (HTML, CSS, JS)
 app.use(express.static(__dirname));
 
-// Default route → serve index.html
-app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/index.html");
-});
+io.on("connection", (socket) => {
+    console.log("User connected:", socket.id);
 
-// WebRTC signaling handlers
-io.on("connection", socket => {
-  console.log("A user connected");
+    socket.on("join-room", (roomId) => {
+        socket.join(roomId);
+        console.log(`${socket.id} joined room ${roomId}`);
+        socket.to(roomId).emit("user-joined", socket.id);
+    });
 
-  socket.on("offer", data => {
-    socket.broadcast.emit("offer", data);
-  });
+    socket.on("offer", (data) => {
+        socket.to(data.room).emit("offer", data.offer);
+    });
 
-  socket.on("answer", data => {
-    socket.broadcast.emit("answer", data);
-  });
+    socket.on("answer", (data) => {
+        socket.to(data.room).emit("answer", data.answer);
+    });
 
-  socket.on("ice-candidate", data => {
-    socket.broadcast.emit("ice-candidate", data);
-  });
+    socket.on("ice-candidate", (data) => {
+        socket.to(data.room).emit("ice-candidate", data.candidate);
+    });
 
-  socket.on("disconnect", () => {
-    console.log("User disconnected");
-  });
+    socket.on("disconnect", () => {
+        console.log("User disconnected:", socket.id);
+    });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+    console.log("Server running on port", PORT);
 });
