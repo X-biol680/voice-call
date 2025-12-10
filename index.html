@@ -1,21 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Live Voice Call</title>
-  <link rel="stylesheet" href="style.css">
+    <title>Voice Call</title>
 </head>
+
 <body>
 
-<div class="container">
-  <h2>🎤 Live Voice Communication</h2>
+    <input id="roomInput" placeholder="Enter Room ID">
+    <button id="startCall">Start Call</button>
+    <button id="joinRoom">Join Room</button>
 
-  <input id="room" type="text" placeholder="Enter Room ID">
-  <button id="joinBtn">Join Room</button>
+    <!-- This plays other user's audio -->
+    <audio id="remoteAudio" autoplay></audio>
 
-  <button id="callBtn" disabled>Start Call</button>
-</div>
+    <!-- Socket.IO -->
+    <script src="/socket.io/socket.io.js"></script>
 
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-<script src="script.js"></script>
+    <!-- Your WebRTC Code -->
+    <script src="script.js"></script>
+
 </body>
 </html>
