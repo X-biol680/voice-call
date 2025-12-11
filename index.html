@@ -6,17 +6,19 @@
 
 <body>
 
+    <h2>Simple Voice Call</h2>
+
     <input id="roomInput" placeholder="Enter Room ID">
     <button id="startCall">Start Call</button>
     <button id="joinRoom">Join Room</button>
 
-    <!-- This plays other user's audio -->
+    <!-- Remote user audio -->
     <audio id="remoteAudio" autoplay></audio>
 
-    <!-- Socket.IO -->
-    <script src="/socket.io/socket.io.js"></script>
+    <!-- Correct Socket.IO CDN (required for Render.com) -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
-    <!-- Your WebRTC Code -->
+    <!-- Your WebRTC JavaScript -->
     <script src="script.js"></script>
 
 </body>
