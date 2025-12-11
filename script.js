@@ -1,4 +1,5 @@
-const socket = io();
+// CONNECT TO RENDER BACKEND
+const socket = io("https://voice-call-2.onrender.com");
 
 // ---------------------------
 // 1. WebRTC ICE Configuration
@@ -23,6 +24,7 @@ document.getElementById("startCall").onclick = async () => {
         return;
     }
 
+    socket.emit("join-room", roomId);   // <--- IMPORTANT
     await startCall(roomId);
 };
 
@@ -36,6 +38,7 @@ document.getElementById("joinRoom").onclick = async () => {
         return;
     }
 
+    socket.emit("join-room", roomId);   // <--- IMPORTANT
     await joinCall(roomId);
 };
 
@@ -47,25 +50,21 @@ async function startCall(room) {
 
     peerConnection = new RTCPeerConnection(configuration);
 
-    // Send local audio to remote user
     localStream.getTracks().forEach(track => {
         peerConnection.addTrack(track, localStream);
     });
 
-    // When ICE Candidates generated, send to server
     peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
             socket.emit("ice-candidate", { room: room, candidate: event.candidate });
         }
     };
 
-    // When remote audio arrives
     peerConnection.ontrack = (event) => {
-        const remoteAudio = document.getElementById("remoteAudio");
-        remoteAudio.srcObject = event.streams[0];
+        document.getElementById("remoteAudio").srcObject = event.streams[0];
     };
 
-    // Create and send offer
+    // Create offer
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
 
@@ -75,7 +74,7 @@ async function startCall(room) {
 }
 
 // ---------------------------
-// Join Call (Send Answer)
+// Join Call (Wait for Offer)
 // ---------------------------
 async function joinCall(room) {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -93,11 +92,8 @@ async function joinCall(room) {
     };
 
     peerConnection.ontrack = (event) => {
-        const remoteAudio = document.getElementById("remoteAudio");
-        remoteAudio.srcObject = event.streams[0];
+        document.getElementById("remoteAudio").srcObject = event.streams[0];
     };
-
-    socket.emit("join-room", room);
 }
 
 // ---------------------------
@@ -106,6 +102,8 @@ async function joinCall(room) {
 
 // Receive offer
 socket.on("offer", async (data) => {
+    console.log("Offer received");
+
     if (!peerConnection) return;
 
     await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
@@ -120,15 +118,16 @@ socket.on("offer", async (data) => {
 
 // Receive answer
 socket.on("answer", async (data) => {
+    console.log("Answer received");
+
     if (!peerConnection) return;
 
     await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-    console.log("Answer received");
 });
 
 // Receive ICE candidate
 socket.on("ice-candidate", async (data) => {
-    if (data.candidate) {
+    if (data.candidate && peerConnection) {
         try {
             await peerConnection.addIceCandidate(data.candidate);
         } catch (e) {
