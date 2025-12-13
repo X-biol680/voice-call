@@ -1,137 +1,84 @@
-// CONNECT TO RENDER BACKEND
-const socket = io("https://voice-call-2.onrender.com");
+const socket = io();
 
-// ---------------------------
-// 1. WebRTC ICE Configuration
-// ---------------------------
-const configuration = {
-    iceServers: [
-        { urls: "stun:stun.l.google.com:19302" }
-    ]
+const config = {
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
 };
 
-let localStream;
-let peerConnection;
-let roomId;
+let pc, stream, roomId;
 
-// ---------------------------
-// 2. Start Call
-// ---------------------------
-document.getElementById("startCall").onclick = async () => {
-    roomId = document.getElementById("roomInput").value.trim();
-    if (!roomId) {
-        alert("Enter a room ID!");
-        return;
-    }
-
-    socket.emit("join-room", roomId);   // <--- IMPORTANT
-    await startCall(roomId);
-};
-
-// ---------------------------
-// 3. Join Room
-// ---------------------------
-document.getElementById("joinRoom").onclick = async () => {
-    roomId = document.getElementById("roomInput").value.trim();
-    if (!roomId) {
-        alert("Enter a room ID!");
-        return;
-    }
-
-    socket.emit("join-room", roomId);   // <--- IMPORTANT
-    await joinCall(roomId);
-};
-
-// ---------------------------
-// Start Call (Create Offer)
-// ---------------------------
-async function startCall(room) {
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-    peerConnection = new RTCPeerConnection(configuration);
-
-    localStream.getTracks().forEach(track => {
-        peerConnection.addTrack(track, localStream);
-    });
-
-    peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-            socket.emit("ice-candidate", { room: room, candidate: event.candidate });
-        }
-    };
-
-    peerConnection.ontrack = (event) => {
-        document.getElementById("remoteAudio").srcObject = event.streams[0];
-    };
-
-    // Create offer
-    const offer = await peerConnection.createOffer();
-    await peerConnection.setLocalDescription(offer);
-
-    socket.emit("offer", { room: room, offer: offer });
-
-    console.log("Offer sent");
+async function joinRoom() {
+    roomId = roomInput.value;
+    socket.emit("join-room", roomId);
+    showRoom();
 }
 
-// ---------------------------
-// Join Call (Wait for Offer)
-// ---------------------------
-async function joinCall(room) {
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+socket.on("room-users", users => {
+    userList.innerHTML = users.map(u => `<li>${u}</li>`).join("");
+});
 
-    peerConnection = new RTCPeerConnection(configuration);
-
-    localStream.getTracks().forEach(track => {
-        peerConnection.addTrack(track, localStream);
-    });
-
-    peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-            socket.emit("ice-candidate", { room: room, candidate: event.candidate });
-        }
-    };
-
-    peerConnection.ontrack = (event) => {
-        document.getElementById("remoteAudio").srcObject = event.streams[0];
-    };
+function startCall() {
+    socket.emit("start-call", roomId);
 }
 
-// ---------------------------
-// Socket Listeners
-// ---------------------------
-
-// Receive offer
-socket.on("offer", async (data) => {
-    console.log("Offer received");
-
-    if (!peerConnection) return;
-
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-
-    const answer = await peerConnection.createAnswer();
-    await peerConnection.setLocalDescription(answer);
-
-    socket.emit("answer", { room: roomId, answer: answer });
-
-    console.log("Answer sent");
+socket.on("incoming-call", () => {
+    callBox.style.display = "block";
 });
 
-// Receive answer
-socket.on("answer", async (data) => {
-    console.log("Answer received");
+async function acceptCall() {
+    socket.emit("accept-call", roomId);
+    callBox.style.display = "none";
+    await startWebRTC(true);
+}
 
-    if (!peerConnection) return;
-
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+socket.on("call-accepted", async () => {
+    await startWebRTC(false);
 });
 
-// Receive ICE candidate
-socket.on("ice-candidate", async (data) => {
-    if (data.candidate && peerConnection) {
-        try {
-            await peerConnection.addIceCandidate(data.candidate);
-        } catch (e) {
-            console.error("Error adding ICE candidate", e);
-        }
+async function startWebRTC(isCaller) {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    pc = new RTCPeerConnection(config);
+    stream.getTracks().forEach(t => pc.addTrack(t, stream));
+
+    pc.onicecandidate = e => {
+        if (e.candidate)
+            socket.emit("ice-candidate", { roomId, candidate: e.candidate });
+    };
+
+    pc.ontrack = e => remoteAudio.srcObject = e.streams[0];
+
+    if (isCaller) {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socket.emit("offer", { roomId, offer });
     }
+}
+
+socket.on("offer", async offer => {
+    pc = new RTCPeerConnection(config);
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(t => pc.addTrack(t, stream));
+
+    pc.onicecandidate = e => {
+        if (e.candidate)
+            socket.emit("ice-candidate", { roomId, candidate: e.candidate });
+    };
+
+    pc.ontrack = e => remoteAudio.srcObject = e.streams[0];
+
+    await pc.setRemoteDescription(offer);
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    socket.emit("answer", { roomId, answer });
+});
+
+socket.on("answer", ans => pc.setRemoteDescription(ans));
+socket.on("ice-candidate", c => pc.addIceCandidate(c));
+
+function endCall() {
+    pc.close();
+    socket.emit("end-call", roomId);
+}
+
+socket.on("call-ended", () => {
+    if (pc) pc.close();
 });
