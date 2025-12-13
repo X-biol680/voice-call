@@ -1,25 +1,19 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Voice Call</title>
-</head>
+<div id="join">
+  <input id="roomInput" placeholder="Room ID">
+  <button onclick="joinRoom()">Join Room</button>
+</div>
 
-<body>
+<div id="room" style="display:none">
+  <ul id="userList"></ul>
+  <button onclick="startCall()">Start Call</button>
+</div>
 
-    <h2>Simple Voice Call</h2>
+<div id="callBox" style="display:none">
+  <button onclick="acceptCall()">Accept</button>
+  <button onclick="endCall()">Decline</button>
+</div>
 
-    <input id="roomInput" placeholder="Enter Room ID">
-    <button id="startCall">Start Call</button>
-    <button id="joinRoom">Join Room</button>
+<audio id="remoteAudio" autoplay></audio>
 
-    <!-- Remote user audio -->
-    <audio id="remoteAudio" autoplay></audio>
-
-    <!-- Correct Socket.IO CDN (required for Render.com) -->
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-
-    <!-- Your WebRTC JavaScript -->
-    <script src="script.js"></script>
-
-</body>
-</html>
+<script src="/socket.io/socket.io.js"></script>
+<script src="script.js"></script>
