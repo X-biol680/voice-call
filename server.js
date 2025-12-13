@@ -1,42 +1,59 @@
 const express = require("express");
 const http = require("http");
-const socketIO = require("socket.io");
+const { Server } = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIO(server, {
-    cors: { origin: "*" }
-});
+const io = new Server(server);
 
-app.use(express.static(__dirname));
+app.use(express.static("public"));
+
+const rooms = {};
 
 io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
+    console.log("Connected:", socket.id);
 
     socket.on("join-room", (roomId) => {
         socket.join(roomId);
-        console.log(`${socket.id} joined room ${roomId}`);
-        socket.to(roomId).emit("user-joined", socket.id);
+
+        if (!rooms[roomId]) rooms[roomId] = [];
+        rooms[roomId].push(socket.id);
+
+        io.to(roomId).emit("room-users", rooms[roomId]);
     });
 
-    socket.on("offer", (data) => {
-        socket.to(data.room).emit("offer", data.offer);
+    socket.on("start-call", (roomId) => {
+        socket.to(roomId).emit("incoming-call");
     });
 
-    socket.on("answer", (data) => {
-        socket.to(data.room).emit("answer", data.answer);
+    socket.on("accept-call", (roomId) => {
+        socket.to(roomId).emit("call-accepted");
     });
 
-    socket.on("ice-candidate", (data) => {
-        socket.to(data.room).emit("ice-candidate", data.candidate);
+    socket.on("end-call", (roomId) => {
+        socket.to(roomId).emit("call-ended");
+    });
+
+    socket.on("offer", ({ roomId, offer }) => {
+        socket.to(roomId).emit("offer", offer);
+    });
+
+    socket.on("answer", ({ roomId, answer }) => {
+        socket.to(roomId).emit("answer", answer);
+    });
+
+    socket.on("ice-candidate", ({ roomId, candidate }) => {
+        socket.to(roomId).emit("ice-candidate", candidate);
     });
 
     socket.on("disconnect", () => {
-        console.log("User disconnected:", socket.id);
+        for (const room in rooms) {
+            rooms[room] = rooms[room].filter(id => id !== socket.id);
+            io.to(room).emit("room-users", rooms[room]);
+        }
     });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log("Server running on port", PORT);
-});
+server.listen(process.env.PORT || 3000, () =>
+    console.log("Server running")
+);
