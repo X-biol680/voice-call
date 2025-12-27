@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Walkie Talkie | Login</title>
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="card">
+    <h2>Walkie Talkie</h2>
+    <p>Enter your User ID</p>
+
+    <input 
+      type="text" 
+      id="userIdInput" 
+      placeholder="Your User ID"
+      autocomplete="off"
+    />
+
+    <button onclick="login()">Continue</button>
+  </div>
+
+  <!-- Socket.IO -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Login logic -->
+  <script src="js/main.js"></script>
+
+</body>
+</html>
