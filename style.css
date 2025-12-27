@@ -1,0 +1,112 @@
+/* Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Body */
+body {
+  height: 100vh;
+  background: linear-gradient(135deg, #020617, #0f172a);
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #e5e7eb;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Card */
+.card {
+  background: rgba(2, 6, 23, 0.9);
+  border-radius: 14px;
+  padding: 22px;
+  width: 320px;
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.35);
+  text-align: center;
+}
+
+/* Headings */
+h2 {
+  margin-bottom: 10px;
+  color: #38bdf8;
+}
+
+/* Inputs */
+input {
+  width: 100%;
+  padding: 11px;
+  margin-top: 12px;
+  border-radius: 8px;
+  background: #020617;
+  border: 1px solid #38bdf8;
+  color: #e5e7eb;
+  outline: none;
+}
+
+input::placeholder {
+  color: #94a3b8;
+}
+
+/* Buttons */
+button {
+  width: 100%;
+  margin-top: 12px;
+  padding: 11px;
+  background: #38bdf8;
+  color: #020617;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  background: #0ea5e9;
+}
+
+/* Divider */
+hr {
+  margin: 18px 0;
+  border: none;
+  height: 1px;
+  background: rgba(56, 189, 248, 0.25);
+}
+
+/* Top bar */
+.top-bar {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 18px;
+}
+
+#roomTitle {
+  color: #38bdf8;
+  font-weight: bold;
+}
+
+/* Bell icon */
+#bell {
+  cursor: pointer;
+  font-size: 22px;
+}
+
+/* Room info */
+#roomInfo {
+  margin-top: 15px;
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+/* Mobile friendly */
+@media (max-width: 400px) {
+  .card {
+    width: 90%;
+  }
+}
